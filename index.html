@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Motivational Quote Generator</title>
+<style>
+  :root{
+    --card-bg: rgba(255,255,255,0.95);
+    --glass: rgba(255,255,255,0.12);
+    --radius: 18px;
+    --shadow: 0 8px 30px rgba(12,20,40,0.15);
+    --accent: #4f46e5;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;}
+  body{
+    display:grid;place-items:center;
+    background:linear-gradient(135deg,#1f2937, #0f172a);
+    transition:background 800ms ease;
+    padding:24px;
+    color:#0b1220;
+  }
+
+  .app {
+    width:100%;
+    max-width:820px;
+    background:var(--card-bg);
+    border-radius:var(--radius);
+    padding:28px;
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(6px) saturate(120%);
+  }
+
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  h1{font-size:1.25rem;margin:0;color:#0b1220}
+  .sub{color:#475569;font-size:0.9rem}
+
+  .quote-box{
+    display:flex;
+    gap:18px;
+    align-items:center;
+    padding:22px;
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.6), rgba(255,255,255,0.4));
+    box-shadow: 0 6px 18px rgba(2,6,23,0.06);
+    transition: transform 300ms ease;
+  }
+
+  .quote {
+    flex:1;
+    font-size:1.125rem;
+    line-height:1.45;
+  }
+  .author {margin-top:10px;font-weight:600;color:#0b1220;opacity:0.85;font-size:0.95rem}
+
+  .controls {
+    margin-top:16px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  button {
+    border:0;
+    padding:10px 14px;
+    border-radius:10px;
+    cursor:pointer;
+    background:var(--glass);
+    color:#0b1220;
+    font-weight:600;
+    transition:transform 120ms ease, background 160ms ease;
+  }
+  button:hover{transform:translateY(-3px)}
+  .primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:white}
+  .danger{background:#f43f5e;color:white}
+  .muted{background:transparent;border:1px solid rgba(11,18,32,0.06);}
+
+  .right-col{display:flex;flex-direction:column;gap:8px;align-items:center;min-width:150px}
+  .small{font-size:0.85rem;color:#334155}
+  .fav-list{margin-top:12px;max-height:160px;overflow:auto;padding:8px;border-radius:8px;background:rgba(15,23,42,0.03)}
+
+  footer{margin-top:18px;font-size:0.85rem;color:#475569;display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+  /* Responsive */
+  @media (max-width:700px){
+    .quote-box{flex-direction:column;align-items:stretch}
+    .right-col{flex-direction:row;justify-content:space-between;min-width:unset}
+  }
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <div>
+        <h1>Motivational Quote Generator</h1>
+        <div class="sub">Fresh boost of motivation — press <b>Space</b> for next quote</div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">Auto-rotate: <span id="autoState">Off</span></div>
+        <div class="small">Shortcut: <b>A</b></div>
+      </div>
+    </header>
+
+    <div class="quote-box" id="quoteBox">
+      <div>
+        <div class="quote" id="quoteText">Loading inspiring quote…</div>
+        <div class="author" id="quoteAuthor"></div>
+      </div>
+
+      <div class="right-col">
+        <button id="newBtn" class="primary">New Quote</button>
+        <button id="copyBtn">Copy</button>
+        <button id="tweetBtn">Tweet</button>
+        <button id="favBtn">☆ Favorite</button>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label class="small">Auto rotate:
+        <input type="checkbox" id="autoToggle" style="margin-left:8px"/>
+      </label>
+
+      <button id="viewFavs" class="muted">View Favorites</button>
+      <button id="clearFavs" class="danger">Clear Favorites</button>
+
+      <div style="flex:1"></div>
+
+      <label class="small">Interval (sec):
+        <input type="number" id="intervalInput" value="6" min="3" max="60" style="width:72px;margin-left:8px;padding:6px;border-radius:8px;border:1px solid #e6eef6"/>
+      </label>
+    </div>
+
+    <div id="favPanel" style="display:none;margin-top:12px">
+      <h3 style="margin:8px 0 6px 0">Favorites</h3>
+      <div class="fav-list" id="favList"></div>
+    </div>
+
+    <footer>
+      <div>Made with ♥ — Simple static app (open `index.html`)</div>
+      <div><small>Press <b>Space</b> for next, <b>A</b> toggles auto</small></div>
+    </footer>
+  </div>
+
+<script>
+(() => {
+  // Quotes array (feel free to extend)
+  const QUOTES = [
+    { q: "The only way to do great work is to love what you do.", a: "Steve Jobs" },
+    { q: "Don't watch the clock; do what it does. Keep going.", a: "Sam Levenson" },
+    { q: "Start where you are. Use what you have. Do what you can.", a: "Arthur Ashe" },
+    { q: "Success is not final, failure is not fatal: It is the courage to continue that counts.", a: "Winston Churchill" },
+    { q: "You are never too old to set another goal or to dream a new dream.", a: "C.S. Lewis" },
+    { q: "Believe you can and you're halfway there.", a: "Theodore Roosevelt" },
+    { q: "It always seems impossible until it's done.", a: "Nelson Mandela" },
+    { q: "Small daily improvements are the key to staggering long-term results.", a: "James Clear" },
+    { q: "Act as if what you do makes a difference. It does.", a: "William James" },
+    { q: "What we fear of doing most is usually what we most need to do.", a: "Ralph Waldo Emerson" }
+  ];
+
+  // DOM
+  const quoteText = document.getElementById('quoteText');
+  const quoteAuthor = document.getElementById('quoteAuthor');
+  const newBtn = document.getElementById('newBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const tweetBtn = document.getElementById('tweetBtn');
+  const favBtn = document.getElementById('favBtn');
+  const viewFavs = document.getElementById('viewFavs');
+  const favPanel = document.getElementById('favPanel');
+  const favList = document.getElementById('favList');
+  const clearFavs = document.getElementById('clearFavs');
+  const autoToggle = document.getElementById('autoToggle');
+  const autoState = document.getElementById('autoState');
+  const intervalInput = document.getElementById('intervalInput');
+  const appEl = document.getElementById('app');
+
+  // State
+  let current = null;
+  let autoTimer = null;
+
+  // Helpers
+  function pickRandom() {
+    return QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  }
+
+  function applyBackground() {
+    // generate pleasant gradient from random hue
+    const h = Math.floor(Math.random()*360);
+    const deg = Math.floor(Math.random()*360);
+    document.body.style.background = `linear-gradient(${deg}deg, hsl(${h} 90% 10%), hsl(${(h+40)%360} 90% 5%))`;
+  }
+
+  function renderQuote(obj){
+    current = obj;
+    quoteText.textContent = `"${obj.q}"`;
+    quoteAuthor.textContent = obj.a ? `— ${obj.a}` : '';
+    applyBackground();
+    // show whether current is favorited
+    const favs = loadFavs();
+    const key = obj.q + '|' + (obj.a||'');
+    favBtn.textContent = favs[key] ? '★ Favorited' : '☆ Favorite';
+  }
+
+  function newQuote(){
+    const next = pickRandom();
+    renderQuote(next);
+  }
+
+  // Favorites using localStorage
+  function loadFavs(){
+    try {
+      return JSON.parse(localStorage.getItem('mq_favs') || '{}');
+    } catch(e){ return {}; }
+  }
+  function saveFavs(map){
+    localStorage.setItem('mq_favs', JSON.stringify(map));
+  }
+
+  function toggleFav(){
+    if(!current) return;
+    const key = current.q + '|' + (current.a||'');
+    const favs = loadFavs();
+    if(favs[key]){
+      delete favs[key];
+    } else {
+      favs[key] = current;
+    }
+    saveFavs(favs);
+    favBtn.textContent = favs[key] ? '★ Favorited' : '☆ Favorite';
+    showFavsList(); // refresh list if open
+  }
+
+  function showFavsList(){
+    const favs = loadFavs();
+    const entries = Object.values(favs);
+    favList.innerHTML = entries.length ? entries.map(f=> `
+      <div style="padding:8px;border-bottom:1px solid rgba(2,6,23,0.04)">
+        <div style="font-weight:600">${f.q}</div>
+        <div style="opacity:0.8;margin-top:6px">— ${f.a||''}</div>
+      </div>
+    `).join('') : '<div style="padding:12px;color:#6b7280">No favorites yet — click ☆ to save a quote.</div>';
+    favPanel.style.display = entries.length ? 'block' : 'block';
+  }
+
+  function clearFavorites(){
+    if(!confirm('Clear all saved favorites?')) return;
+    localStorage.removeItem('mq_favs');
+    showFavsList();
+  }
+
+  function copyCurrent(){
+    if(!current) return;
+    const text = `${current.q} — ${current.a||''}`;
+    navigator.clipboard?.writeText(text).then(()=>{
+      alert('Quote copied to clipboard!');
+    }).catch(()=>{ alert('Copy not supported in this browser.'); });
+  }
+
+  function tweetCurrent(){
+    if(!current) return;
+    const text = encodeURIComponent(`"${current.q}" — ${current.a||''}`);
+    const url = `https://twitter.com/intent/tweet?text=${text}`;
+    window.open(url, '_blank');
+  }
+
+  function startAuto(){
+    const sec = Math.max(3, parseInt(intervalInput.value || 6, 10));
+    stopAuto();
+    autoTimer = setInterval(newQuote, sec*1000);
+    autoState.textContent = 'On';
+    autoToggle.checked = true;
+  }
+function stopAuto(){
+    if(autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    autoState.textContent = 'Off';
+    autoToggle.checked = false;
+  }
+
+  // Event wiring
+  newBtn.addEventListener('click', newQuote);
+  favBtn.addEventListener('click', toggleFav);
+  copyBtn.addEventListener('click', copyCurrent);
+  tweetBtn.addEventListener('click', tweetCurrent);
+  viewFavs.addEventListener('click', ()=> {
+    favPanel.style.display = favPanel.style.display === 'none' ? 'block' : 'none';
+    showFavsList();
+  });
+  clearFavs.addEventListener('click', clearFavorites);
+  autoToggle.addEventListener('change', (e)=>{
+    if(e.target.checked) startAuto(); else stopAuto();
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e)=>{
+    if(e.code === 'Space'){ e.preventDefault(); newQuote(); }
+    if(e.key.toLowerCase() === 'a'){ // toggle auto
+      if(autoTimer) stopAuto(); else startAuto();
+    }
+  });
+    // init
+  (function init(){
+    // load last quote from session storage if present
+    const last = sessionStorage.getItem('mq_last');
+    if(last){
+      try{
+        const obj = JSON.parse(last);
+        renderQuote(obj);
+      }catch(e){ newQuote(); }
+    } else {
+      newQuote();
+    }
+    // save last quote when leaving
+    window.addEventListener('beforeunload', ()=> {
+      if(current) sessionStorage.setItem('mq_last', JSON.stringify(current));
+    });
+
+    // small animation
+    setTimeout(()=>{ appEl.style.transform = 'translateY(0)'; }, 100);
+  })();
+
+})();
+</script>
+</body>
+</html>
+
+
