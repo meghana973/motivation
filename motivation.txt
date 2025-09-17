@@ -1,0 +1,9 @@
+The main goal of this project is to spread positivity and motivation through a simple interface. It’s a great beginner-friendly project for learning front-end web development and can also be enhanced with advanced features like APIs, user accounts, or mobile app integration.
+
+⚡ Tech Stack:
+
+Frontend: HTML, CSS, JavaScript
+
+Hosting Options: GitHub Pages, Netlify, Vercel
+
+Optional Tools: Bootstrap/Tailwind for styling, LocalStorage for saving favorite quotes
